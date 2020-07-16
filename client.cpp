@@ -1,34 +1,65 @@
 #include <iostream>
 #include <vector>
+#include <thread>
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 
 using namespace boost::asio;
 
+void read(ip::tcp::socket& socket){
+    while(true){
+        std::string data;
+        streambuf message;
+        read_until(socket, message, "");
+
+        data = buffer_cast<const char*>(message.data()); 
+        std::cout << data << std::endl;
+    }
+}
+
+void write(ip::tcp::socket& socket){
+    while(true){
+        std::string message2;
+        std::getline(std::cin, message2);
+
+        boost::system::error_code ignored_error;
+        write(socket, boost::asio::buffer(message2), ignored_error);
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    if(argc != 2){
-        std::cout << "Usage `./client.o <host address>`" << std::endl;
-        return 1;
-    }
-    
-
-        std::string data;
-        boost::system::error_code error;
+    std::thread read_thd;
+    std::thread wrtie_thd;
+    // std::string data;
+    boost::system::error_code error;
     try
     {
         io_context io_context;
-        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi(argv[1]));
+        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi("127.0.0.1"));
+        ip::tcp::socket socket(io_context);
+        socket.connect(endpoint);
 
-        for(;;){
-            streambuf message;
-            ip::tcp::socket socket(io_context);
-            socket.connect(endpoint);
-            read_until(socket, message, "");
+        //read from server by thread
+        read_thd = std::thread{[&socket]{read(socket);}};
+        wrtie_thd = std::thread{[&socket]{write(socket);}};
+        read_thd.join();
+        wrtie_thd.join();
 
-            data = buffer_cast<const char*>(message.data()); 
-            std::cout << data << std::endl;
-        }
+        // for(;;){
+            // read from server
+            // streambuf message;
+            // read_until(socket, message, "");
+
+            // data = buffer_cast<const char*>(message.data()); 
+            // std::cout << data << std::endl;
+            //wrtie to server
+            // std::string message2;
+            // std::getline(std::cin, message2);
+
+            // boost::system::error_code ignored_error;
+            // write(socket, boost::asio::buffer(message2), ignored_error);
+        // }
     }
     catch(const std::exception& e)
     {
