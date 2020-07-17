@@ -30,8 +30,7 @@ void write(ip::tcp::socket& socket){
 int main(int argc, char* argv[])
 {
     std::thread read_thd;
-    std::thread wrtie_thd;
-    // std::string data;
+    std::thread write_thd;
     boost::system::error_code error;
     try
     {
@@ -40,32 +39,15 @@ int main(int argc, char* argv[])
         ip::tcp::socket socket(io_context);
         socket.connect(endpoint);
 
-        //read from server by thread
         read_thd = std::thread{[&socket]{read(socket);}};
-        wrtie_thd = std::thread{[&socket]{write(socket);}};
+        write_thd = std::thread{[&socket]{write(socket);}};
         read_thd.join();
-        wrtie_thd.join();
-
-        // for(;;){
-            // read from server
-            // streambuf message;
-            // read_until(socket, message, "");
-
-            // data = buffer_cast<const char*>(message.data()); 
-            // std::cout << data << std::endl;
-            //wrtie to server
-            // std::string message2;
-            // std::getline(std::cin, message2);
-
-            // boost::system::error_code ignored_error;
-            // write(socket, boost::asio::buffer(message2), ignored_error);
-        // }
+        write_thd.join();
     }
     catch(const std::exception& e)
     {
         std::cerr << e.what() << '\n';
     }
-    
 
     return 1;
 }
