@@ -26,17 +26,24 @@ void write(ip::tcp::socket& socket){
 
 int main(int argc, char* argv[])
 {
-    std::thread read_thd;
-    std::thread write_thd;
+    if(argc != 2){
+        std::cerr << "Usage: ./client.o <port>" << std::endl;
+        return 1;
+    }
 
     try
     {
-        io_context io_context;
-        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi("127.0.0.1"));
-        ip::tcp::acceptor acceptor(io_context, endpoint);
+        std::thread read_thd;
+        std::thread write_thd;
 
+        io_context io_context;
         ip::tcp::socket socket(io_context);
+
+        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi(argv[1]));
+        ip::tcp::acceptor acceptor(io_context, endpoint);
+        
         acceptor.accept(socket);
+        std::cout << "Connection established!" << std::endl;
 
         write_thd = std::thread{[&socket]{write(socket);}};
         read_thd = std::thread{[&socket]{read(socket);}};

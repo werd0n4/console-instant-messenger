@@ -29,15 +29,22 @@ void write(ip::tcp::socket& socket){
 
 int main(int argc, char* argv[])
 {
-    std::thread read_thd;
-    std::thread write_thd;
-    boost::system::error_code error;
+    if(argc != 2){
+        std::cerr << "Usage: ./server.o <port>" << std::endl;
+        return 1;
+    }
+
     try
     {
+        std::thread read_thd;
+        std::thread write_thd;
+
         io_context io_context;
-        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi("127.0.0.1"));
         ip::tcp::socket socket(io_context);
+
+        ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi(argv[1]));
         socket.connect(endpoint);
+        std::cout << "Connection established!" << std::endl;
 
         read_thd = std::thread{[&socket]{read(socket);}};
         write_thd = std::thread{[&socket]{write(socket);}};
