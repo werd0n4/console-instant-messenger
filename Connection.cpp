@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <thread>
 #include <boost/asio.hpp>
@@ -55,6 +56,7 @@ public:
     void read_msg(){
         while(running.load()){
             streambuf buf;
+            bool file_sending = false;
 
             try{
                 read_until(socket, buf, "");
@@ -64,9 +66,15 @@ public:
                     running.store(false);
                     socket.close();
                     exit(0);
-                }else
+                }else if(msg_in == "sendf"){
+                    file_sending = true;
+                }else if(file_sending){
+                    std::cout << "File reciving..." << std::endl;
+                    std::cout << msg_in << std::endl;
+                    file_sending = false;
+                }else{
                     std::cout << "$> " + msg_in << std::endl;
-
+                }
             }catch(std::exception& e){
                 std::cerr << "Exception: " << e.what() << '\n';
             }
@@ -84,8 +92,19 @@ public:
                     socket.close();
                     exit(0);
                 }else if(msg_out.substr(0, msg_out.find(" ")) == "sendf"){
+                    std::streampos size;
+                    char* memblock;
                     std::string fpath = msg_out.substr(msg_out.find(" ") + 1);
-                    write(socket, boost::asio::buffer("I wanto to send you: " + fpath));
+                    std::ifstream file(fpath, std::ios::in|std::ios::binary|std::ios::ate);
+
+                    size = file.tellg();
+                    memblock = new char[size];
+                    file.seekg(0, std::ios::beg);
+                    file.read(memblock, size);
+                    file.close();
+
+                    write(socket, boost::asio::buffer("sendf"));
+                    write(socket, boost::asio::buffer(memblock, size));
                 }else{
                     write(socket, boost::asio::buffer(msg_out));
                 }
