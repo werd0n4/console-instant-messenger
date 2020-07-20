@@ -52,10 +52,6 @@ public:
         }
     }
 
-    // ~Connection(){
-    //     socket.close();
-    // }
-
     void read_msg(){
         while(running.load()){
             streambuf buf;
@@ -64,11 +60,10 @@ public:
                 read_until(socket, buf, "");
                 msg_in = buffer_cast<const char*>(buf.data()); 
                 if(msg_in == "exit"){
-                    std::cout << "$> End connection" << std::endl;
+                    std::cout << "$> Connection ended" << std::endl;
                     running.store(false);
                     socket.close();
                     exit(0);
-                    // write(socket, boost::asio::buffer("exit"));
                 }else
                     std::cout << "$> " + msg_in << std::endl;
 
@@ -88,8 +83,12 @@ public:
                     write(socket, boost::asio::buffer("exit"));
                     socket.close();
                     exit(0);
+                }else if(msg_out.substr(0, msg_out.find(" ")) == "sendf"){
+                    std::string fpath = msg_out.substr(msg_out.find(" ") + 1);
+                    write(socket, boost::asio::buffer("I wanto to send you: " + fpath));
+                }else{
+                    write(socket, boost::asio::buffer(msg_out));
                 }
-                write(socket, boost::asio::buffer(msg_out));
             }catch(const std::exception& e){
                 std::cerr << "Exception: " << e.what() << '\n';
             }
