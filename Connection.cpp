@@ -33,7 +33,8 @@ public:
         }
     }
 
-    Connection(io_context& io_context, ip::tcp::socket& _socket, ip::tcp::endpoint& endpoint, ip::tcp::acceptor& acceptor) : socket(_socket){//server constructor
+    //server constructor
+    Connection(io_context& io_context, ip::tcp::socket& _socket, ip::tcp::endpoint& endpoint, ip::tcp::acceptor& acceptor) : socket(_socket){
         try
         {
             acceptor.accept(socket);
@@ -51,21 +52,27 @@ public:
         }
     }
 
+    // ~Connection(){
+    //     socket.close();
+    // }
+
     void read_msg(){
-        while(running){
+        while(running.load()){
             streambuf buf;
 
             try{
                 read_until(socket, buf, "");
                 msg_in = buffer_cast<const char*>(buf.data()); 
-                std::cout << "$> " + msg_in << std::endl;
                 if(msg_in == "exit"){
-                    std::cout << "End connection" << std::endl;
-                    running=false;
-                    break;
-                }
+                    std::cout << "$> End connection" << std::endl;
+                    running.store(false);
+                    socket.close();
+                    exit(0);
+                    // write(socket, boost::asio::buffer("exit"));
+                }else
+                    std::cout << "$> " + msg_in << std::endl;
+
             }catch(std::exception& e){
-                running = false;
                 std::cerr << "Exception: " << e.what() << '\n';
             }
         }
@@ -75,15 +82,15 @@ public:
         while(running.load()){
             std::getline(std::cin, msg_out);
 
-            if(msg_out == "exit"){
-                running=false;
-                break;
-            }
-
             try{
+                if(msg_out == "exit"){
+                    running.store(false);
+                    write(socket, boost::asio::buffer("exit"));
+                    socket.close();
+                    exit(0);
+                }
                 write(socket, boost::asio::buffer(msg_out));
             }catch(const std::exception& e){
-                running=false;
                 std::cerr << "Exception: " << e.what() << '\n';
             }
         }

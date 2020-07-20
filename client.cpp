@@ -1,4 +1,4 @@
-#include "connection.cpp"
+#include "Connection.cpp"
 
 int main(int argc, char* argv[])
 {
