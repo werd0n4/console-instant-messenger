@@ -2,3 +2,6 @@
 *.txt
 /.vscode
 *.out
+*.png
+*.jpg
+*.jpeg

@@ -54,9 +54,10 @@ public:
     }
 
     void read_msg(){
+        bool file_sending = false;
+
         while(running.load()){
             streambuf buf;
-            bool file_sending = false;
 
             try{
                 read_until(socket, buf, "");
@@ -69,9 +70,13 @@ public:
                 }else if(msg_in == "sendf"){
                     file_sending = true;
                 }else if(file_sending){
-                    std::cout << "File reciving..." << std::endl;
-                    std::cout << msg_in << std::endl;
-                    file_sending = false;
+                    std::streampos size;
+                    std::ofstream file("odebrane.txt", std::ios::out | std::ios::app | std::ios::binary);
+
+                    file.write(buffer_cast<const char*>(buf.data()), buf.size());
+                    file.close();
+                    if(size != 512)
+                        file_sending = false;
                 }else{
                     std::cout << "$> " + msg_in << std::endl;
                 }
@@ -92,6 +97,8 @@ public:
                     socket.close();
                     exit(0);
                 }else if(msg_out.substr(0, msg_out.find(" ")) == "sendf"){
+                    write(socket, boost::asio::buffer("sendf"));
+
                     std::streampos size;
                     char* memblock;
                     std::string fpath = msg_out.substr(msg_out.find(" ") + 1);
@@ -103,7 +110,6 @@ public:
                     file.read(memblock, size);
                     file.close();
 
-                    write(socket, boost::asio::buffer("sendf"));
                     write(socket, boost::asio::buffer(memblock, size));
                 }else{
                     write(socket, boost::asio::buffer(msg_out));
