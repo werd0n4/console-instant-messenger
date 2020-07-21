@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
     ip::tcp::endpoint endpoint(ip::tcp::v4(), atoi(argv[1]));
     ip::tcp::acceptor acceptor(io_context, endpoint);
         
-    Connection server{io_context, socket, endpoint, acceptor};
+    Connection server{socket, acceptor};
 
     return 0;
 }

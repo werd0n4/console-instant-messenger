@@ -21,7 +21,7 @@ private:
 
 public:
     //client constructor
-    Connection(io_context& io_context, ip::tcp::socket& _socket, ip::tcp::endpoint& endpoint) : socket(_socket){
+    Connection(ip::tcp::socket& _socket, ip::tcp::endpoint& endpoint) : socket(_socket){
         try
         {
             socket.connect(endpoint);
@@ -40,7 +40,7 @@ public:
     }
 
     //server constructor
-    Connection(io_context& io_context, ip::tcp::socket& _socket, ip::tcp::endpoint& endpoint, ip::tcp::acceptor& acceptor) : socket(_socket){
+    Connection(ip::tcp::socket& _socket, ip::tcp::acceptor& acceptor) : socket(_socket){
         try
         {
             acceptor.accept(socket);
