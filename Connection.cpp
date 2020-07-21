@@ -70,12 +70,12 @@ public:
                 }else if(msg_in == "sendf"){
                     file_sending = true;
                 }else if(file_sending){
-                    std::streampos size;
-                    std::ofstream file("odebrane.txt", std::ios::out | std::ios::app | std::ios::binary);
+                    // std::streampos size;
+                    std::ofstream file("odebrane.jpg", std::ios::out | std::ios::app | std::ios::binary);
 
                     file.write(buffer_cast<const char*>(buf.data()), buf.size());
                     file.close();
-                    if(size != 512)
+                    if(buf.size() != 512)
                         file_sending = false;
                 }else{
                     std::cout << "$> " + msg_in << std::endl;
