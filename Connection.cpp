@@ -10,9 +10,14 @@ using namespace boost::asio;
 class Connection{
 private:
     std::atomic_bool running;
-    std::string msg_in, msg_out;
+    std::string msg_in, msg_out, new_file_name;
     ip::tcp::socket& socket;
     std::thread read_thrd, write_thrd;
+    std::mutex mtx;
+    std::condition_variable cv;
+
+    bool file_sending = false;
+    bool new_file_has_name = true;
 
 public:
     //client constructor
@@ -54,7 +59,6 @@ public:
     }
 
     void read_msg(){
-        bool file_sending = false;
 
         while(running.load()){
             streambuf buf;
@@ -69,14 +73,21 @@ public:
                     exit(0);
                 }else if(msg_in == "sendf"){
                     file_sending = true;
+                    new_file_has_name = false;
+                    std::cout << "$> User wants to send you a file. Type a name for it: " << std::endl;
                 }else if(file_sending){
-                    // std::streampos size;
-                    std::ofstream file("odebrane.jpg", std::ios::out | std::ios::app | std::ios::binary);
+                    if(!new_file_has_name){
+                        std::unique_lock<std::mutex> ul(mtx);
+                        cv.wait(ul, [this]{return new_file_has_name;});
+                    }
+                    std::ofstream file(new_file_name, std::ios::out | std::ios::app | std::ios::binary);
 
                     file.write(buffer_cast<const char*>(buf.data()), buf.size());
                     file.close();
-                    if(buf.size() != 512)
+                    if(buf.size() != 512){
                         file_sending = false;
+                        new_file_has_name = false;
+                    }
                 }else{
                     std::cout << "$> " + msg_in << std::endl;
                 }
@@ -89,6 +100,12 @@ public:
     void write_msg(){
         while(running.load()){
             std::getline(std::cin, msg_out);
+            if(file_sending && !new_file_has_name){
+                new_file_name = msg_out;
+                new_file_has_name = true;
+                cv.notify_one();
+                continue;
+            }
 
             try{
                 if(msg_out == "exit"){
